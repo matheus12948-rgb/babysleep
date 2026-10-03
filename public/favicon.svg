@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8E84F5" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+  </defs>
+  <!-- Background circular badge -->
+  <circle cx="50" cy="50" r="48" fill="#1E2238" />
+  
+  <!-- Stylized Crescent Moon -->
+  <path d="M 62 24 C 40 24 28 42 28 58 C 28 72 40 84 54 84 C 62 84 70 80 74 74 C 58 74 46 62 46 48 C 46 36 53 28 62 24 Z" fill="url(#moonGrad)" />
+  
+  <!-- Little Star companion -->
+  <path d="M 68 36 L 70 41 L 75 42 L 71 46 L 72 51 L 68 48 L 64 51 L 65 46 L 61 42 L 66 41 Z" fill="url(#starGrad)" />
+</svg>

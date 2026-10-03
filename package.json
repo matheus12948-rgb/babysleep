@@ -1,0 +1,45 @@
+{
+  "name": "clone-napper",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "validate:phase1": "node node_modules/tsx/dist/cli.mjs tests/validate_phase1.ts",
+    "validate:phase2": "node node_modules/tsx/dist/cli.mjs tests/validate_phase2.ts",
+    "validate:phase3": "node node_modules/tsx/dist/cli.mjs tests/validate_phase3.ts",
+    "validate:phase35": "node node_modules/tsx/dist/cli.mjs tests/validate_phase35.ts",
+    "validate:phase4": "node node_modules/tsx/dist/cli.mjs tests/validate_phase4.ts",
+    "validate:phase5": "node node_modules/tsx/dist/cli.mjs tests/validate_phase5.ts",
+    "validate:phase6": "node node_modules/tsx/dist/cli.mjs tests/validate_phase6.ts",
+    "validate:phase7": "node node_modules/tsx/dist/cli.mjs tests/validate_phase7.ts",
+    "validate:all": "node node_modules/tsx/dist/cli.mjs tests/validate_phase1.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase2.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase3.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase35.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase4.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase5.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase6.ts && node node_modules/tsx/dist/cli.mjs tests/validate_phase7.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.50.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.6.1",
+    "oxlint": "^1.81.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0"
+  }
+}
