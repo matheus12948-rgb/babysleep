@@ -471,6 +471,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onAddNewBaby }) => {
             {isSupabaseConfigured ? 'Conectado e Seguro' : 'Modo Offline / Local'}
           </span>
         </div>
+
+        {/* Painel Administrativo (Acesso restrito e exclusivo para Administradores) */}
+        {(user?.role === 'ADMIN' || user?.isAdmin) && (
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs bg-indigo-50/50 dark:bg-indigo-950/30 p-2.5 rounded-2xl">
+            <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <ShieldCheck size={16} className="text-indigo-600 dark:text-indigo-400" />
+              <div>
+                <span className="font-bold block">Painel Administrativo</span>
+                <span className="text-[11px] text-slate-400">Área de controle e métricas do sistema</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.history.pushState({}, '', '/admin');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }
+              }}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+              aria-label="Acessar o Painel Administrativo"
+            >
+              Acessar Painel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modais de Suporte */}

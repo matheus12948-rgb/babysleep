@@ -36,18 +36,25 @@ src/
 │   │                   # DiaperModal, CareActivityModal, ConfirmDeleteModal
 │   └── ui/             # Componentes genéricos de UI (QuickLogModal, PageLoader, etc.)
 ├── features/
+│   ├── admin/          # Painel Administrativo (/admin), Layout, Rotas e Páginas (Fase 8)
 │   ├── auth/           # Autenticação, sessão e proteção
 │   ├── baby/           # Perfis de bebês e cálculo de idade
-│   ├── sleep-tracker/  # Timer de sono em tempo real e registros retroativos
+│   ├── caregiver/      # Multi-cuidador, permissões OWNER/CAREGIVER/VIEWER e convites
+│   ├── education/      # Cursos, aulas, artigos e progresso educacional
+│   ├── journal/        # Diário do bebê, humor e memórias da família
+│   ├── notifications/  # Lembretes de sono e algoritmo de Horário Silencioso
 │   ├── sleep-engine/   # Motor de previsão de janelas de sono e calibração
+│   ├── sleep-tracker/  # Timer de sono em tempo real e registros retroativos
+│   ├── sounds/         # Motor procedural de áudio Web Audio API e MediaSession
 │   ├── statistics/     # Agregações, médias móveis, tendências e gráficos Recharts
-│   └── journal/        # Diário do bebê, humor e memórias da família
-├── hooks/              # Custom hooks: useFeeding, useDiapers, useActivities, useRoutineTimeline, useTheme
+│   └── subscription/   # Modelos Free/Premium, Paywall e checkout sandbox
+├── hooks/              # Custom hooks: useFeeding, useDiapers, useActivities, useTheme, etc.
 ├── layouts/            # AppLayout com Header, Bottom Nav e Ação Rápida (+)
-├── pages/              # Telas (Dashboard [Core], Timeline [Lazy], Stats [Lazy], Sounds [Lazy], Profile [Lazy])
-├── services/           # SupabaseClient e DataService (CRUD completo)
-├── types/              # Definições globais TypeScript (rotina, sono, perfis)
-└── utils/              # Conversões °C/°F, formatação de amamentação e validações
+├── pages/              # Telas da aplicação do usuário (Dashboard, Timeline, Stats, Sounds, Profile)
+├── pwa/                # PWAService, registro de Service Worker e ciclo de vida
+├── services/           # DataService, AdminDataService, SupabaseClient (CRUD completo)
+├── types/              # Definições globais TypeScript (rotina, sono, perfis, admin)
+└── utils/              # Segurança contra XSS, formatação de amamentação e conversões
 ```
 
 ---
@@ -61,7 +68,7 @@ src/
 
 ---
 
-## 4. Estratégia de Performance e Code Splitting (Fase 3.5)
+## 4. Estratégia de Performance e Code Splitting (Fase 3.5 e 8)
 
 Para garantir que o carregamento inicial em redes móveis seja instantâneo, a aplicação adota uma estratégia de particionamento dinâmico de código:
 
@@ -74,13 +81,15 @@ Para garantir que o carregamento inicial em redes móveis seja instantâneo, a a
    - `SoundsPage`: Carregado apenas na aba de Sons.
    - `TimelinePage`: Carregado apenas na aba de Linha do Tempo.
    - `ProfilePage`: Carregado apenas na aba de Perfil/Configurações.
+   - `AdminView`: Carregado sob demanda estritamente quando a rota `/admin*` é solicitada.
    - `OnboardingView`: Carregado apenas se o usuário não possuir bebês cadastrados ou estiver adicionando um novo bebê.
    - Fallback gracioso com `PageLoader` apresentando indicador minimalista e temático sem saltos de layout.
 
 3. **Isolamento de Bibliotecas Pesadas (`manualChunks` no Vite/Rollup):**
-   - `vendor-recharts`: Todo o ecossistema do Recharts e suas dependências matemáticas (d3-shape, victory-vendor, etc.) foi isolado em chunk próprio (`vendor-recharts-[hash].js`), não consumindo banda no carregamento inicial.
+   - `vendor-recharts`: Todo o ecossistema do Recharts e suas dependências matemáticas isolados em chunk próprio (`vendor-recharts-[hash].js`), não consumindo banda no carregamento inicial.
    - `vendor-supabase`: Biblioteca do cliente Supabase isolada para cache HTTP eficiente.
-   - **Resultado:** Redução do JavaScript de entrada de **877.28 KB (242.42 KB gzip)** para **381.01 KB (106.48 KB gzip)**, uma economia de mais de **56%** na carga inicial da rede móvel.
+   - `AdminView`: Painel administrativo completo isolado em chunk próprio (`dist/assets/AdminView-[hash].js`, ~94 KB).
+   - **Resultado:** Redução do JavaScript de entrada de **877.28 KB** para **403.42 KB (113.37 KB gzip)**, mantendo performance de alta velocidade.
 
 ---
 
@@ -89,7 +98,7 @@ Para garantir que o carregamento inicial em redes móveis seja instantâneo, a a
 ### 5.1 Motor de Áudio Web Audio API (`SoundEngine.ts`)
 - **Síntese 100% Procedural e Offline:** Todo o espectro acústico (ruído branco, rosa, marrom, sons de ondas do mar, chuva, batimentos cardíacos, shush uterino e melodias suaves) é sintetizado em tempo real utilizando nós nativos da Web Audio API (`AudioBufferSourceNode`, `BiquadFilterNode`, `GainNode`, `OscillatorNode`).
 - **Zero Assets Externos:** Elimina a necessidade de downloads de dezenas de megabytes de arquivos `.mp3`/`.wav`, garantindo carregamento instantâneo e funcionamento mesmo em modo avião ou sem conexão.
-- **Fade-Out Gradual Programável:** Utiliza rampas exponenciais e lineares no nó mestre de ganho (`masterGain.gain.linearRampToValueAtTime`) nos últimos 1 a 5 minutos configurados, reduzindo suavemente o volume para zero e evitando despertares de susto em bebês no sono leve.
+- **Fade-Out Gradual Programável:** Utiliza rampas exponenciais e lineares no nó mestre de ganho nos últimos 1 a 5 minutos configurados, reduzindo suavemente o volume para zero e evitando despertares de susto em bebês no sono leve.
 - **Mini Player Persistente (`MiniSoundPlayer.tsx`):** O `SoundProvider` global gerencia o estado da reprodução e o timer contínuo no topo da aplicação, permitindo que cuidadores naveguem entre abas sem interrupção do som.
 
 ### 5.2 Módulo Educacional Estruturado (`src/features/education/`)
@@ -104,72 +113,51 @@ Para garantir que o carregamento inicial em redes móveis seja instantâneo, a a
 ### 6.1 Matriz de Papéis e Permissões Granulares (`src/types/caregiver.ts`)
 - **`OWNER`:** Responsável principal / criador do perfil do bebê. Possui permissão plena de gravação, exclusão, convite de novos cuidadores, alteração de planos e geração de relatórios.
 - **`CAREGIVER`:** Co-mãe, co-pai, babá ou cuidador diário. Possui permissão completa de registro e edição de sono, alimentação, fraldas, atividades e diário, mas não pode convidar terceiros nem excluir o bebê.
-- **`VIEWER`:** Avós, tios, observadores externos e pediatra. Possui permissão estritamente de leitura (linha do tempo, estatísticas descritivas e status do bebê). Todas as mutações são bloqueadas no cliente e no PostgreSQL via RLS (`can_edit_baby`).
+- **`VIEWER`:** Avós, tios, observadores externos e pediatra. Possui permissão estritamente de leitura.
 
 ### 6.2 Ciclo de Vida de Convites (`caregiver_invitations`)
 - Códigos alfanuméricos curtos e legíveis (`BS-XXXX`) com expiração automática em 7 dias.
 - Proteção contra reutilização (`status: 'ACCEPTED'`), verificação de validade temporal e revogação imediata pelo `OWNER`.
-- Modais de interface intuitivos: [`InviteCaregiverModal.tsx`](file:///c:/Users/mathe/OneDrive/Documentos/projetos/Clone%20Napper/src/features/caregiver/InviteCaregiverModal.tsx) (para gerar e copiar código/link) e [`JoinBabyModal.tsx`](file:///c:/Users/mathe/OneDrive/Documentos/projetos/Clone%20Napper/src/features/caregiver/JoinBabyModal.tsx) (para aceitar convite digitando o código).
 
 ### 6.3 Sincronização em Tempo Real (`useBabyRealtime.ts`)
 - Escuta ativa em canais Supabase Realtime (`postgres_changes`) filtrados por `baby_id` para tabelas de sono, alimentação, fraldas, atividades e cuidadores.
-- Propagação de eventos instantânea entre dispositivos móveis da família com feedback visual sutil ("🟢 Conectado ao vivo" / "🟡 Modo Local").
 
 ### 6.4 Modelo de Assinaturas & Paywall (`SubscriptionContext.tsx`)
-- Modelo híbrido `FREE` vs `PREMIUM` (mensal ou anual com 33% de desconto) gerenciado no Supabase (`user_subscriptions`) com fallback persistente no `localStorage`.
-- Modal Paywall de alta conversão [`PremiumUpgradeModal.tsx`](file:///c:/Users/mathe/OneDrive/Documentos/projetos/Clone%20Napper/src/features/subscription/PremiumUpgradeModal.tsx) com checkout simulado/sandbox de 7 dias grátis.
+- Modelo híbrido `FREE` vs `PREMIUM` gerenciado no Supabase com fallback persistente no `localStorage`.
+- Modal Paywall com checkout simulado/sandbox de 7 dias grátis.
 
 ### 6.5 Relatório Consolidado para o Pediatra (`PediatricReportModal.tsx`)
 - Consolidação clínica descritiva dos últimos 7, 14 ou 30 dias com médias diárias de sono, sonecas, mamadas, volume de mamadeiras, fraldas de xixi/cocô e notas de intercorrências.
-- Suporte a cópia de texto formatado (ideal para WhatsApp do médico) e impressão direta em PDF.
 
 ---
 
 ## 7. Arquitetura PWA Avançada, Notificações & MediaSession (Fase 6)
 
 ### 7.1 Web App Manifest & Instalação Standalone (`public/manifest.webmanifest`)
-- **Configuração:** `display: standalone`, `orientation: portrait-primary`, cores temáticas (`theme_color: #1e1b4b`, `background_color: #0f172a`), ícones de 192px e 512px com propósito `maskable any`.
-- **Atalhos Rápidos de Aplicativo (Shortcuts):** Permite acesso direto pela tela inicial aos fluxos de "Registrar Sono" e "Amamentação".
-- **Banner Customizado (`PWAInstallBanner.tsx`):** Captura do evento `beforeinstallprompt` via `PWAService.ts`, suprimindo popups intrusivos e oferecendo banner flutuante elegante com persistência de recusa via `localStorage`.
+- `display: standalone`, `orientation: portrait-primary`, cores temáticas (`theme_color: #1e1b4b`, `background_color: #0f172a`), ícones de 192px e 512px com propósito `maskable any`.
+- Atalhos Rápidos de Aplicativo (Shortcuts) para "Registrar Sono" e "Amamentação".
 
 ### 7.2 Service Worker & Cache Offline Resiliente (`public/sw.js`)
-- **Precache do App Shell:** Chave de versão `babysleep-cache-v1` armazenando arquivos essenciais no evento `install` com `skipWaiting()`.
-- **Estratégias de Cache:**
-  - **Stale-While-Revalidate:** Para estilos, scripts empacotados, ícones e fontes, servindo a versão em cache instantaneamente enquanto busca atualizações em segundo plano.
-  - **Network-First:** Para rotas de navegação HTML, garantindo que o usuário veja o estado mais recente quando online e preservando o app shell offline.
-- **Limpeza Automática:** Remoção de versões legadas de cache durante a ativação (`activate`) com `clients.claim()`.
-- **Suporte a Push e Background Sync:** Listeners de `push` e `notificationclick` com redirecionamento de foco para a aba do aplicativo.
+- Precache do App Shell (`babysleep-cache-v1`), estratégias Stale-While-Revalidate para assets e Network-First para navegação HTML, limpeza automática em `activate`.
 
 ### 7.3 Motor de Notificações & Horário Silencioso (`NotificationService.ts`)
-- **Antecedência Configurável:** Lembretes proativos disparados com 5, 10, 15 ou 30 minutos de antecedência da estimativa da próxima soneca do bebê.
-- **Tratamento Algorítmico de Horário Silencioso (`isInQuietHours`):**
-  - Trata com precisão intervalos noturnos que cruzam a meia-noite (ex.: `22:00` às `06:30`), além de intervalos diurnos convencionais.
-  - Bloqueia silenciosamente alertas de janelas durante o repouso noturno da família.
-- **Duplo Canal de Envio:** Disparo primário via `registration.showNotification` no Service Worker para entrega em segundo plano e fallback nativo na Web Notification API.
+- Antecedência configurável (5, 10, 15, 30 min) com tratamento algorítmico robusto de Horário Silencioso (`isInQuietHours`) que trata cruzamentos de meia-noite.
 
 ### 7.4 Áudio em Segundo Plano & MediaSession API (`SoundEngine.ts`)
-- **Sincronização com o Sistema Operacional:** Atualização de metadados (`MediaMetadata`) com nome do som, arte visual e autor ao iniciar ou pausar faixas procedurais.
-- **Controles Físicos e Lockscreen:** Mapeamento das ações `play`, `pause` e `stop` aos botões de fones de ouvido (Bluetooth/cabo) e controles da tela de bloqueio de smartphones iOS e Android.
-- **Persistência Acústica:** Mantém o loop sonoro contínuo e sem interrupções mesmo quando o usuário bloqueia a tela do aparelho móvel.
+- Mapeamento nativo com o sistema operacional para reprodução contínua na tela de bloqueio e fones Bluetooth.
 
 ---
 
 ## 8. Acessibilidade WCAG 2.1 AA, Segurança & Resiliência (Fase 7)
 
 ### 8.1 Acessibilidade Digital (WCAG 2.1 AA)
-- **Estrutura Semântica:** Adoção de elementos HTML5 semânticos (`<header>`, `<main role="main">`, `<nav aria-label="Navegação principal">`).
-- **Compatibilidade com Leitores de Tela:** Atributos `aria-label`, `aria-current="page"`, `aria-haspopup="dialog"` e `aria-modal="true"` em todos os botões e janelas de diálogo.
-- **Navegação por Teclado:** Suporte completo à tecla `Escape` para fechamento de modais e anéis de foco visíveis (`focus-visible:ring-2 focus-visible:ring-indigo-500`) em todos os componentes interativos.
-- **Status de Rede Discreto:** Componente [`NetworkStatusIndicator.tsx`](file:///c:/Users/mathe/OneDrive/Documentos/projetos/Clone%20Napper/src/components/ui/NetworkStatusIndicator.tsx) com `role="status"` e `aria-live="polite"` que informa transições de conectividade sem interromper a navegação assistiva.
+- Landmarks HTML5, suporte a leitores de tela (`aria-label`, `aria-current`, `aria-haspopup`, `aria-modal`), navegação total por teclado com anéis de foco visíveis e `NetworkStatusIndicator.tsx` com `role="status"` e `aria-live="polite"`.
 
 ### 8.2 Segurança da Aplicação e Prevenção de XSS (`src/utils/security.ts`)
-- **Sanitização de Dados:** Função `sanitizeInput` aplicada em notas de rotina, diário e cadastros, neutralizando tags executáveis (`<script>`, `<style>`, `<iframe>`), manipuladores de eventos in-line (`onerror=`, `onclick=`) e pseudo-protocolos perigosos (`javascript:`).
-- **Escape de Entidades:** Função `escapeHtml` para codificação estrita de entidades sensíveis antes de qualquer renderização textual.
-- **Higienização de Sessão:** Procedimento `secureSignOutCleanup` que purga dados de cache do bebê e perfis de usuário ao deslogar, mantendo unicamente preferências locais de hardware/interface (volume, tema, dismiss de PWA).
+- Sanitização rigorosa (`sanitizeInput`), escape de entidades (`escapeHtml`) e limpeza de sessão sem vazamento de cache (`secureSignOutCleanup`).
 
 ### 8.3 Resiliência e Tolerância a Falhas (`ErrorBoundary.tsx`)
-- **Barreira Global de Exceções:** Envolve toda a árvore de contextos da aplicação, capturando erros de ciclo de vida (`componentDidCatch` e `getDerivedStateFromError`).
-- **Experiência de Recuperação:** Tela de contingência acolhedora com acessibilidade auditada (`role="alert"`, `aria-live="assertive"`), orientando o cuidador e oferecendo botões de recarga e retorno à página inicial sem perda de dados locais.
+- Barreira global de erros com interface temática e amigável para contingência sem perda de dados.
 
 ---
 
@@ -177,7 +165,7 @@ Para garantir que o carregamento inicial em redes móveis seja instantâneo, a a
 
 ### 9.1 Isolamento e Roteamento Administrativo
 - **Code Splitting Sob Demanda:** O módulo administrativo (`src/features/admin/AdminView.tsx`) é carregado via `React.lazy`, gerando o chunk `dist/assets/AdminView-[hash].js` (~94 KB). Usuários regulares da aplicação principal nunca realizam download deste código.
-- **Deep Linking Nativo:** O container `AdminView` mapeia o histórico nativo (`popstate` e `pushState`) suportando as 9 rotas requeridas:
+- **Deep Linking Nativo:** O container `AdminView` mapeia o histórico nativo (`popstate` e `pushState`) sincronizando as 9 rotas requeridas:
   - `/admin`: Dashboard executivo com KPIs reais do banco.
   - `/admin/users` e `/admin/users/:id`: Gestão paginada de usuários, detalhes de bebês e métricas de engajamento.
   - `/admin/babies`: Listagem de bebês sob o princípio de mínimo acesso e contagem de cuidadores.

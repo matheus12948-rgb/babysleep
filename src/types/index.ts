@@ -4,8 +4,11 @@
 
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
 
+import { UserRole } from './admin';
+
 export * from './caregiver';
 export * from './subscription';
+export * from './admin';
 
 export interface UserProfile {
   id: string;
@@ -14,6 +17,7 @@ export interface UserProfile {
   avatarUrl?: string;
   timezone: string;
   isAdmin?: boolean;
+  role?: UserRole;
   createdAt: string;
 }
 

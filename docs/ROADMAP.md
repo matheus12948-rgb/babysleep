@@ -1,6 +1,6 @@
 # Roadmap de Desenvolvimento — BabySleep
 
-O projeto BabySleep é desenvolvido em 7 fases incrementais com garantia de qualidade, persistência e responsividade de ponta a ponta.
+O projeto BabySleep é desenvolvido em 8 fases incrementais com garantia de qualidade, persistência e responsividade de ponta a ponta.
 
 ---
 
@@ -138,8 +138,6 @@ O projeto BabySleep é desenvolvido em 7 fases incrementais com garantia de qual
 - [x] Suíte de testes automatizados `tests/validate_phase7.ts` com 69/69 testes aprovados
 - [x] Bateria de regressão global completa: **492/492 testes aprovados (100% de sucesso em todas as 7 fases)**
 - [x] Build final de produção aprovado em **4.85s**, com code splitting e zero chunks acima do limite
-
----
 
 ---
 

@@ -12,6 +12,7 @@ Armazena informações cadastrais dos cuidadores e usuários do sistema.
 - `full_name` (TEXT)
 - `avatar_url` (TEXT)
 - `timezone` (TEXT, default: `'America/Sao_Paulo'`)
+- `role` (TEXT: `'USER'`, `'ADMIN'`, default: `'USER'`)
 - `is_admin` (BOOLEAN, default: `FALSE`)
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 

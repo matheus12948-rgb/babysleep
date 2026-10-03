@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { BabyProvider, useBaby } from '@/features/baby/BabyContext';
@@ -22,10 +22,15 @@ const TimelinePage = lazy(() => import('@/pages/TimelinePage').then(m => ({ defa
 const StatsPage = lazy(() => import('@/pages/StatsPage').then(m => ({ default: m.StatsPage })));
 const SoundsPage = lazy(() => import('@/pages/SoundsPage').then(m => ({ default: m.SoundsPage })));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AdminView = lazy(() => import('@/features/admin/AdminView').then(m => ({ default: m.AdminView })));
 
 const MainApplication: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { babies, activeBaby, loading: babyLoading, refreshBabies } = useBaby();
+
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.location.pathname.startsWith('/admin') : false;
+  });
 
   const [currentTab, setCurrentTab] = useState<ActiveTab>('home');
   const [isAddingNewBaby, setIsAddingNewBaby] = useState<boolean>(false);
@@ -33,6 +38,16 @@ const MainApplication: React.FC = () => {
   const [isManualSleepOpen, setIsManualSleepOpen] = useState<boolean>(false);
   const [isJournalOpen, setIsJournalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        setIsAdminRoute(window.location.pathname.startsWith('/admin'));
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const showToast = (title: string, msg: string) => {
     setToastMessage(`${title}: ${msg}`);
@@ -54,6 +69,22 @@ const MainApplication: React.FC = () => {
   // 2. Não autenticado -> Tela de Login / Cadastro
   if (!user) {
     return <AuthView />;
+  }
+
+  // 2.1 Rota Administrativa Independente (/admin*)
+  if (isAdminRoute) {
+    return (
+      <Suspense fallback={<PageLoader message="Carregando Painel Administrativo..." />}>
+        <AdminView
+          onExitAdmin={() => {
+            setIsAdminRoute(false);
+            if (typeof window !== 'undefined') {
+              window.history.pushState({}, '', '/');
+            }
+          }}
+        />
+      </Suspense>
+    );
   }
 
   // 3. Sem bebês ou adicionando novo bebê -> Onboarding
